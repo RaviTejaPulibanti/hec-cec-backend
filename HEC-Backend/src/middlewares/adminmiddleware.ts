@@ -1,9 +1,9 @@
 import type {NextFunction, Request, Response} from "express";
 
 
-const adminMiddleware = (req: Request | any, res: Response, next: NextFunction) => {
+export const adminMiddleware = (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    if (req.user && req.user.role === "admin") {  
+    if (req.user && req.user.role === "COLLEGE_ADMIN") {  
 
       next();
     }

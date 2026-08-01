@@ -19,11 +19,11 @@ const authMiddleware = async (
 
     const token = authHeader.split(" ")[1] as string;
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string
-    );
-    req.user = decoded;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
+    req.user = {
+      ...decoded,
+      _id: decoded?._id || decoded?.userId,
+    };
     next();
   } catch (error) {
     return res.status(401).json({
