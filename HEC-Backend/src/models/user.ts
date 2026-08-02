@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export enum UserRole {
-  SUPER_ADMIN = "SUPER_ADMIN",
   COLLEGE_ADMIN = "COLLEGE_ADMIN",
   STUDENT = "STUDENT",
 }
