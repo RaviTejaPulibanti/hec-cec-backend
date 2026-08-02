@@ -1,6 +1,8 @@
 import Exam from "../models/ExamModel.js";
 import type { Request, Response } from "express";
 
+import mongoose from "mongoose";
+
 export const createExam = async (req: Request, res: Response) => {
   try {
     const newExam = new Exam({
@@ -119,6 +121,52 @@ export const deleteExam = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: "Exam deleted successfully",
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+export const addQuestionsToExam = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { questionIds } = req.body;
+
+    const exam = await Exam.findByIdAndUpdate(
+      req.params.id,
+      {
+        $addToSet: {
+          questions: {
+            $each: questionIds,
+          },
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    exam.totalQuestions = exam.questions.length;
+
+    await exam.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Questions added successfully",
+      data: exam,
     });
   } catch (error: any) {
     res.status(500).json({

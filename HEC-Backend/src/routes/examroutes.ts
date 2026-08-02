@@ -6,6 +6,7 @@ import {
   getExam,
   getExams,
   updateExam,
+  addQuestionsToExam
 } from "../controllers/ExamController.js";
 
 
@@ -26,5 +27,13 @@ router.get("/:id", authMiddleware, getExam);
 router.put("/:id", authMiddleware, adminMiddleware, updateExam);
 
 router.delete("/:id", authMiddleware, adminMiddleware, deleteExam);
+
+
+router.post(
+    "/:id/questions",
+    authMiddleware,
+    adminMiddleware,
+    addQuestionsToExam
+);
 
 export default router;
