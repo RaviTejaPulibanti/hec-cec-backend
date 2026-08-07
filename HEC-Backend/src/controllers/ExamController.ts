@@ -27,8 +27,6 @@ export const createExam = async (req: Request, res: Response) => {
   }
 }
 
-
-
 export const getExams = async (req: Request, res: Response) => {
   try {
     const exams = await Exam.find().populate("createdBy" , "name email").sort({ createdAt: -1 });
@@ -47,7 +45,6 @@ export const getExams = async (req: Request, res: Response) => {
     });
   }
 } 
-
 
 export const getExam = async (req: Request, res: Response) => {
   try {
@@ -73,7 +70,6 @@ export const getExam = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 export const updateExam = async (req: Request, res: Response) => {
   try {
@@ -106,7 +102,6 @@ export const updateExam = async (req: Request, res: Response) => {
   }
 };
 
-
 export const deleteExam = async (req: Request, res: Response) => {
   try {
     const exam = await Exam.findByIdAndDelete(req.params.id);
@@ -129,7 +124,6 @@ export const deleteExam = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 export const addQuestionsToExam = async (
   req: Request,
@@ -166,6 +160,87 @@ export const addQuestionsToExam = async (
     res.status(200).json({
       success: true,
       message: "Questions added successfully",
+      data: exam,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const removeQuestionFromExam = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { examId, questionId } = req.params;
+
+    const exam = await Exam.findByIdAndUpdate(
+      examId,
+      {
+        $pull: {
+          questions: questionId,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    exam.totalQuestions = exam.questions.length;
+
+    await exam.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Question removed successfully",
+      data: exam,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const publishExam = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const exam = await Exam.findById(req.params.id);
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    if (exam.questions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Add at least one question before publishing.",
+      });
+    }
+
+    exam.status = "PUBLISHED";
+
+    await exam.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Exam published successfully",
       data: exam,
     });
   } catch (error: any) {
