@@ -8,6 +8,7 @@ import {
   updateExam,
   addQuestionsToExam,
   publishExam,
+  unpublishExam,
   removeQuestionFromExam
 } from "../controllers/ExamController.js";
 
@@ -42,5 +43,7 @@ router.delete(
 );
 
 router.patch("/:id/publish", authMiddleware, adminMiddleware ,  publishExam);
+
+router.patch("/:id/unpublish", authMiddleware, adminMiddleware, unpublishExam);
 
 export default router;

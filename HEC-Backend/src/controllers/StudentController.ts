@@ -52,10 +52,7 @@ export const getExamById = async (
 
     const exam = await Exam.findById(examId)
       .where({ status: "PUBLISHED", startTime: { $lte: now }, endTime: { $gte: now } })
-      .populate({
-        path: "questions",
-        select: "question options marks negativeMarks subject",
-      });
+      .lean();
 
     if (!exam) {
       return res.status(404).json({
@@ -63,6 +60,11 @@ export const getExamById = async (
         message: "Exam not found or not available",
       });
     }
+
+    const questions = await Question.find({ examId: exam._id }).select("question options marks negativeMarks");
+    
+    // Attach questions to the exam object
+    (exam as any).questions = questions;
 
     res.status(200).json({
       success: true,
@@ -134,9 +136,7 @@ if (existingResult) {
 }
     const { answers } = req.body;
 
-    const exam = await Exam.findById(
-      req.params.examId as string
-    ).populate("questions");
+    const exam = await Exam.findById(req.params.examId as string);
 
     if (!exam) {
       return res.status(404).json({
@@ -145,11 +145,24 @@ if (existingResult) {
       });
     }
 
+    const questions = await Question.find({ examId: exam._id });
+
+    const now = Date.now();
+    const examEndTime = new Date(exam.endTime).getTime();
+    const gracePeriodMs = 2 * 60 * 1000; // 2 minutes grace period
+
+    if (now > examEndTime + gracePeriodMs) {
+      return res.status(400).json({
+        success: false,
+        message: "Exam submission rejected: Time window has closed.",
+      });
+    }
+
     let score = 0;
     let correctAnswers = 0;
     let wrongAnswers = 0;
 
-    const questions = exam.questions as any[];
+
 
     for (const question of questions) {
       const submittedAnswer = answers.find(
@@ -205,13 +218,34 @@ export const getMyResults = async (
     const results = await Result.find({
       student: req.user._id,
     })
-      .populate("exam", "title subject duration")
-      .sort({ createdAt: -1 });
+      .populate("exam", "title duration")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const resultsWithDetails = await Promise.all(
+      results.map(async (result) => {
+        if (!result.exam) {
+          return {
+            ...result,
+            totalMarks: 0,
+            exam: { title: "Deleted Exam", duration: 0 }
+          };
+        }
+
+        // Calculate totalMarks dynamically
+        const questions = await Question.find({ examId: result.exam._id });
+        const totalMarks = questions.reduce((sum, q) => sum + q.marks, 0);
+        return {
+          ...result,
+          totalMarks,
+        };
+      })
+    );
 
     res.status(200).json({
       success: true,
-      count: results.length,
-      data: results,
+      count: resultsWithDetails.length,
+      data: resultsWithDetails,
     });
   } catch (error: any) {
     res.status(500).json({

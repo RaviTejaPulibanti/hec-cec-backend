@@ -1,4 +1,6 @@
 import Exam from "../models/ExamModel.js";
+import Question from "../models/questionModel.js";
+import Result from "../models/resultModel.js";
 import type { Request, Response } from "express";
 
 import mongoose from "mongoose";
@@ -29,12 +31,22 @@ export const createExam = async (req: Request, res: Response) => {
 
 export const getExams = async (req: Request, res: Response) => {
   try {
-    const exams = await Exam.find().populate("createdBy" , "name email").sort({ createdAt: -1 });
+    const exams = await Exam.find().populate("createdBy" , "name email").sort({ createdAt: -1 }).lean();
+
+    const examsWithCount = await Promise.all(
+      exams.map(async (exam) => {
+        const questionCount = await Question.countDocuments({ examId: exam._id });
+        return {
+          ...exam,
+          questionCount,
+        };
+      })
+    );
 
     res.status(200).json({
       success: true,
-      count: exams.length,
-      data: exams,
+      count: examsWithCount.length,
+      data: examsWithCount,
     });
 
   }catch(err){
@@ -113,9 +125,21 @@ export const deleteExam = async (req: Request, res: Response) => {
       });
     }
 
+    // Delete all questions that belong to this exam
+    // We use the exam's _id since questions store the exam ID in their 'examId' field
+    await Question.deleteMany({ examId: exam._id });
+
+    // Additionally, if there are questions in the array just in case
+    if (exam.questions && exam.questions.length > 0) {
+      await Question.deleteMany({ _id: { $in: exam.questions } });
+    }
+
+    // Delete all results submitted for this exam
+    await Result.deleteMany({ exam: exam._id });
+
     res.status(200).json({
       success: true,
-      message: "Exam deleted successfully",
+      message: "Exam and all related questions and results deleted successfully",
     });
   } catch (error: any) {
     res.status(500).json({
@@ -227,10 +251,12 @@ export const publishExam = async (
       });
     }
 
-    if (exam.questions.length === 0) {
+    const questionCount = await Question.countDocuments({ examId: exam._id });
+
+    if (questionCount !== exam.totalQuestions) {
       return res.status(400).json({
         success: false,
-        message: "Add at least one question before publishing.",
+        message: `Cannot publish: Exam requires exactly ${exam.totalQuestions} questions, but currently has ${questionCount}.`,
       });
     }
 
@@ -241,6 +267,43 @@ export const publishExam = async (
     res.status(200).json({
       success: true,
       message: "Exam published successfully",
+      data: exam,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const unpublishExam = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const exam = await Exam.findById(req.params.id);
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    if (exam.status !== "PUBLISHED") {
+      return res.status(400).json({
+        success: false,
+        message: "Exam is not published.",
+      });
+    }
+
+    exam.status = "DRAFT";
+    await exam.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Exam unpublished successfully",
       data: exam,
     });
   } catch (error: any) {

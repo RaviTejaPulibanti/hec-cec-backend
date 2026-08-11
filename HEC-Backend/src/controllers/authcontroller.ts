@@ -72,6 +72,7 @@ const signup = async (data: SignupData) => {
     name: user.name,
     email: user.email,
     role: user.role,
+    token,
   };
 };
 

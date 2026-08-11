@@ -51,13 +51,21 @@ export const getAllResults = async (
   try {
     const results = await Result.find()
       .populate("student", "name email")
-      .populate("exam", "title subject")
+      .populate("exam", "title")
       .sort({ createdAt: -1 });
+
+    const validResults = results.filter((r: any) => r.exam != null);
+    const orphanedIds = results.filter((r: any) => r.exam == null).map(r => r._id);
+
+    if (orphanedIds.length > 0) {
+      // Self-heal the database by deleting orphaned results
+      await Result.deleteMany({ _id: { $in: orphanedIds } });
+    }
 
     res.status(200).json({
       success: true,
-      count: results.length,
-      data: results,
+      count: validResults.length,
+      data: validResults,
     });
   } catch (error: any) {
     res.status(500).json({
@@ -156,6 +164,97 @@ export const getStudent = async (
     res.status(200).json({
       success: true,
       data: student,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+export const getUsers = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const query: any = {};
+    
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search as string, "i");
+      query.$or = [
+        { name: searchRegex },
+        { email: searchRegex }
+      ];
+    }
+    
+    if (req.query.role && req.query.role !== "ALL") {
+      query.role = req.query.role;
+    }
+
+    const users = await User.find(query)
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalCount = await User.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.status(200).json({
+      success: true,
+      data: users,
+      pagination: {
+        totalCount,
+        totalPages,
+        currentPage: page,
+        limit
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateUserRole = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { role } = req.body;
+    
+    if (!Object.values(UserRole).includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role provided",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User role updated successfully",
+      data: user,
     });
   } catch (error: any) {
     res.status(500).json({

@@ -8,9 +8,19 @@ import {
   getExamResults,
   getStudents,
   getStudent,
+  getDashboardStats,
+  getUsers,
+  updateUserRole,
 } from "../controllers/adminController.js";
 
 const router = Router();
+
+router.get(
+  "/stats",
+  authMiddleware,
+  adminMiddleware,
+  getDashboardStats
+);
 
 router.get(
   "/results",
@@ -24,6 +34,20 @@ router.get(
   authMiddleware,
   adminMiddleware,
   getExamResults
+);
+
+router.get(
+  "/users",
+  authMiddleware,
+  adminMiddleware,
+  getUsers
+);
+
+router.patch(
+  "/users/:id/role",
+  authMiddleware,
+  adminMiddleware,
+  updateUserRole
 );
 
 export default router;

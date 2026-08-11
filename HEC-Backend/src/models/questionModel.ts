@@ -6,7 +6,7 @@ export interface IQuestion extends Document {
   correctAnswer: number;
   marks: number;
   negativeMarks: number;
-  subject: string;
+  examId: mongoose.Types.ObjectId;
   createdBy: mongoose.Types.ObjectId;
 }
 
@@ -39,8 +39,9 @@ const questionSchema = new Schema<IQuestion>(
       default: 1,
     },
 
-    subject: {
-      type: String,
+    examId: {
+      type: Schema.Types.ObjectId,
+      ref: "Exam",
       required: true,
     },
 

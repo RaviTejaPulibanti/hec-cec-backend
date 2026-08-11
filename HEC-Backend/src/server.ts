@@ -6,9 +6,9 @@ dotenv.config();
 
 import authRoutes from "./routes/authroutes.js";
 import questionRoutes from "./routes/questionroutes.js";
-
 import ExamRoutes from "./routes/examroutes.js"
 import studentRoutes from "./routes/studentroutes.js";
+import adminRoutes from "./routes/adminroutes.js";
 
 const app = express();
 
@@ -20,6 +20,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/exam" , ExamRoutes);
 app.use("/api/student", studentRoutes);
+app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 5000;
 

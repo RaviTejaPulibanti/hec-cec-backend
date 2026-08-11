@@ -2,7 +2,6 @@ import mongoose , { Schema, Document } from "mongoose";
 
 export interface IExam extends Document {
   title: string;
-  subject: string;
   duration: number;
   totalQuestions: number;
   questions: mongoose.Types.ObjectId[];
@@ -18,11 +17,6 @@ const examSchema = new Schema<IExam>(
       type: String,
       required: true,
       trim: true,
-    },
-
-    subject: {
-      type: String,
-      required: true,
     },
 
     duration: {
