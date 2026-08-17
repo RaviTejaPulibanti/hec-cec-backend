@@ -15,6 +15,7 @@ export interface IResult extends Document {
   correctAnswers: number;
   wrongAnswers: number;
   unattempted: number;
+  timeTaken: number;
 
   submittedAt: Date;
 }
@@ -68,6 +69,11 @@ const resultSchema = new Schema<IResult>(
       default: 0,
     },
 
+    timeTaken: {
+      type: Number,
+      default: 0,
+    },
+
     submittedAt: {
       type: Date,
       default: Date.now,
@@ -77,5 +83,7 @@ const resultSchema = new Schema<IResult>(
     timestamps: true,
   }
 );
+
+resultSchema.index({ student: 1, exam: 1 }, { unique: true });
 
 export default mongoose.model<IResult>("Result", resultSchema);

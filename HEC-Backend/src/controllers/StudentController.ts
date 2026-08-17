@@ -14,16 +14,23 @@ export const getAvailableExams = async (
    try {
     const now = new Date();
 
-    const exams = await Exam.find({
+    const activeExams = await Exam.find({
       status: "PUBLISHED",
       startTime: { $lte: now },
       endTime: { $gte: now },
     }).select("-questions");
 
+    const upcomingExams = await Exam.find({
+      status: "PUBLISHED",
+      startTime: { $gt: now },
+    }).select("-questions");
+
     res.status(200).json({
       success: true,
-      count: exams.length,
-      data: exams,
+      data: {
+        active: activeExams,
+        upcoming: upcomingExams,
+      },
     });
   } catch (error: any) {
     res.status(500).json({
@@ -134,7 +141,7 @@ if (existingResult) {
     message: "You have already submitted this exam.",
   });
 }
-    const { answers } = req.body;
+    const { answers = [], timeTaken = 0 } = req.body;
 
     const exam = await Exam.findById(req.params.examId as string);
 
@@ -177,10 +184,10 @@ if (existingResult) {
         question.correctAnswer
       ) {
         correctAnswers++;
-        score += question.marks;
+        score += question.marks || 0;
       } else {
         wrongAnswers++;
-        score -= question.negativeMarks;
+        score -= question.negativeMarks || 0;
       }
     }
 
@@ -195,6 +202,7 @@ if (existingResult) {
       correctAnswers,
       wrongAnswers,
       unattempted,
+      timeTaken,
     });
 
     res.status(201).json({
@@ -265,7 +273,8 @@ export const getResultById = async (
       student: req.user._id,
     })
       .populate("exam", "title subject duration")
-      .populate("answers.question", "question options");
+      .populate("answers.question", "question options correctAnswer marks negativeMarks")
+      .lean();
 
     if (!result) {
       return res.status(404).json({
@@ -274,9 +283,132 @@ export const getResultById = async (
       });
     }
 
+    const allQuestions = await Question.find({ examId: result.exam._id }).select("question options correctAnswer marks negativeMarks").lean();
+
     res.status(200).json({
       success: true,
-      data: result,
+      data: {
+        ...result,
+        allQuestions
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getExamLeaderboard = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { examId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = (req.query.search as string) || "";
+
+    const skip = (page - 1) * limit;
+
+    const pipeline: any[] = [
+      {
+        $match: { exam: new mongoose.Types.ObjectId(examId as string) },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "student",
+          foreignField: "_id",
+          as: "studentDoc",
+        },
+      },
+      {
+        $unwind: "$studentDoc",
+      },
+    ];
+
+    if (search) {
+      pipeline.push({
+        $match: {
+          "studentDoc.name": { $regex: search, $options: "i" },
+        },
+      });
+    }
+
+    // Sort by score descending, then timeTaken ascending, then submittedAt ascending
+    pipeline.push({
+      $sort: { score: -1, timeTaken: 1, submittedAt: 1 },
+    });
+
+    const facetPipeline = [
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: limit }],
+        },
+      },
+    ];
+
+    const results = await Result.aggregate([...pipeline, ...facetPipeline]);
+
+    const total = results[0].metadata[0]?.total || 0;
+    const data = results[0].data.map((item: any, idx: number) => ({
+      rank: skip + idx + 1,
+      name: item.studentDoc.name,
+      score: item.score,
+      timeTaken: item.timeTaken,
+      submittedAt: item.submittedAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getLeaderboardExams = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const exams = await Exam.find({
+      status: "COMPLETED",
+    }).select("-questions").sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: exams.length,
+      data: exams,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getAnnouncements = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const announcements = await mongoose.model("Announcement").find().sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: announcements,
     });
   } catch (error: any) {
     res.status(500).json({

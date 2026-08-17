@@ -10,6 +10,8 @@ import ExamRoutes from "./routes/examroutes.js"
 import studentRoutes from "./routes/studentroutes.js";
 import adminRoutes from "./routes/adminroutes.js";
 
+import { startExamStatusUpdater } from "./utils/cron.js";
+
 const app = express();
 
 app.use(cors()); 
@@ -26,6 +28,9 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   await connectDB();
+  
+  // Start the background cron job to update expired exams
+  startExamStatusUpdater();
 
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

@@ -85,7 +85,7 @@ export const getExam = async (req: Request, res: Response) => {
 
 export const updateExam = async (req: Request, res: Response) => {
   try {
-    const exam = await Exam.findByIdAndUpdate(
+    let exam = await Exam.findByIdAndUpdate(
       req.params.id,
       req.body,
       {
@@ -99,6 +99,12 @@ export const updateExam = async (req: Request, res: Response) => {
         success: false,
         message: "Exam not found",
       });
+    }
+
+    // Automatically transition back to PUBLISHED if the admin extends the time of a COMPLETED exam
+    if (exam.status === "COMPLETED" && new Date(exam.endTime).getTime() > Date.now()) {
+      exam.status = "PUBLISHED";
+      await exam.save();
     }
 
     res.status(200).json({

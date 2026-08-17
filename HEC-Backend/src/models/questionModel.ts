@@ -39,6 +39,11 @@ const questionSchema = new Schema<IQuestion>(
       default: 1,
     },
 
+    negativeMarks: {
+      type: Number,
+      default: 0,
+    },
+
     examId: {
       type: Schema.Types.ObjectId,
       ref: "Exam",

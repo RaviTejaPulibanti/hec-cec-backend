@@ -4,6 +4,7 @@ import Result from "../models/resultModel.js";
 import User , {UserRole } from "../models/user.js";
 import Exam from "../models/ExamModel.js";
 import Question from "../models/questionModel.js";
+import Announcement from "../models/AnnouncementModel.js";
 
 
 export const getDashboardStats = async (
@@ -24,6 +25,7 @@ export const getDashboardStats = async (
     const totalQuestions = await Question.countDocuments();
 
     const totalResults = await Result.countDocuments();
+    const completedExams = await Exam.countDocuments({ status: "COMPLETED" });
 
     res.status(200).json({
       success: true,
@@ -33,7 +35,97 @@ export const getDashboardStats = async (
         totalExams,
         totalQuestions,
         totalResults,
+        completedExams,
       },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getAdminStats = async (req: Request, res: Response) => {
+  try {
+    const totalStudents = await User.countDocuments({ role: "STUDENT" } as any);
+    const totalExams = await Exam.countDocuments();
+    const activeExams = await Exam.countDocuments({ status: "PUBLISHED" });
+
+    // Fetch top 5 recent results
+    const recentResults = await Result.find()
+      .populate("student", "name email")
+      .populate("exam", "title")
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalStudents,
+        totalExams,
+        activeExams,
+        recentResults,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const createAnnouncement = async (req: Request, res: Response) => {
+  try {
+    const { title, message } = req.body;
+    const announcement = await Announcement.create({
+      title,
+      message,
+      createdBy: (req as any).user._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Announcement created successfully",
+      data: announcement,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getAnnouncements = async (req: Request, res: Response) => {
+  try {
+    const announcements = await Announcement.find().sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      data: announcements,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteAnnouncement = async (req: Request, res: Response) => {
+  try {
+    const announcement = await Announcement.findByIdAndDelete(req.params.id);
+    if (!announcement) {
+      return res.status(404).json({
+        success: false,
+        message: "Announcement not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Announcement deleted successfully",
     });
   } catch (error: any) {
     res.status(500).json({

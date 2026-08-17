@@ -11,6 +11,9 @@ import {
   getDashboardStats,
   getUsers,
   updateUserRole,
+  createAnnouncement,
+  getAnnouncements,
+  deleteAnnouncement,
 } from "../controllers/adminController.js";
 
 const router = Router();
@@ -20,6 +23,27 @@ router.get(
   authMiddleware,
   adminMiddleware,
   getDashboardStats
+);
+
+router.post(
+  "/announcements",
+  authMiddleware,
+  adminMiddleware,
+  createAnnouncement
+);
+
+router.get(
+  "/announcements",
+  authMiddleware,
+  adminMiddleware,
+  getAnnouncements
+);
+
+router.delete(
+  "/announcements/:id",
+  authMiddleware,
+  adminMiddleware,
+  deleteAnnouncement
 );
 
 router.get(

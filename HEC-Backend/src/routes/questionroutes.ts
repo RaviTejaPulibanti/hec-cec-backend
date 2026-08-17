@@ -5,11 +5,14 @@ import {
   getQuestions,
   getQuestion,
   updateQuestion,
+  bulkCreateQuestions,
 } from "../controllers/questionController.js";
 import authMiddleware from "../middlewares/authmiddleware.js";
 import { adminMiddleware } from "../middlewares/adminmiddleware.js";
 
 const router = Router();
+
+router.post("/bulk", authMiddleware, adminMiddleware, bulkCreateQuestions);
 
 router.post("/", authMiddleware, adminMiddleware, createQuestion);
 

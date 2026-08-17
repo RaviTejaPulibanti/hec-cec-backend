@@ -42,6 +42,56 @@ export const createQuestion = async (req: Request, res: Response) => {
 };
 
 
+export const bulkCreateQuestions = async (req: Request, res: Response) => {
+  try {
+    const createdBy = req.user?._id || req.user?.userId;
+    const { examId, questions } = req.body;
+
+    if (!examId || !Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "examId and a non-empty questions array are required",
+      });
+    }
+
+    const exam = await Exam.findById(examId);
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    const existingCount = await Question.countDocuments({ examId: exam._id });
+    if (existingCount + questions.length > exam.totalQuestions) {
+      return res.status(400).json({
+        success: false,
+        message: `Adding ${questions.length} questions exceeds the maximum limit of ${exam.totalQuestions}. Current count: ${existingCount}.`,
+      });
+    }
+
+    const questionsToInsert = questions.map((q: any) => ({
+      ...q,
+      examId: exam._id,
+      createdBy,
+    }));
+
+    const insertedQuestions = await Question.insertMany(questionsToInsert);
+
+    res.status(201).json({
+      success: true,
+      message: `${insertedQuestions.length} questions uploaded successfully`,
+      data: insertedQuestions,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
 export const getQuestions = async (req: Request, res: Response) => {
   try {
     const questions = await Question.find().populate("examId", "title");

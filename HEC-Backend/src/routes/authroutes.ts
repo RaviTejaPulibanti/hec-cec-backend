@@ -6,6 +6,7 @@ import authmiddleware from "../middlewares/authmiddleware.js";
 const router = Router();
 
 router.get("/getme", authmiddleware, authController.getme);
+router.put("/profile", authmiddleware, authController.updateProfile);
 
 router.post("/signup", async (req: Request, res: Response) => {
   try {

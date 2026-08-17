@@ -8,6 +8,9 @@ import {
   submitExam,
   getMyResults,
   getResultById,
+  getExamLeaderboard,
+  getLeaderboardExams,
+  getAnnouncements,
 } from "../controllers/StudentController.js";
 
 const router = Router();
@@ -24,5 +27,11 @@ router.post("/exams/:examId/submit", authMiddleware, submitExam);
 router.get("/results", authMiddleware, getMyResults);
 
 router.get("/results/:resultId", authMiddleware, getResultById);
+
+router.get("/exams/:examId/leaderboard", authMiddleware, getExamLeaderboard);
+
+router.get("/leaderboard-list", authMiddleware, getLeaderboardExams);
+
+router.get("/announcements", authMiddleware, getAnnouncements);
 
 export default router;
