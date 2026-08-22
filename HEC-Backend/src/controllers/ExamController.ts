@@ -5,12 +5,38 @@ import type { Request, Response } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
+const getExamDateBounds = (examDate: unknown) => {
+  if (typeof examDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(examDate)) {
+    return null;
+  }
+
+  const startTime = new Date(`${examDate}T00:00:00.000Z`);
+  if (Number.isNaN(startTime.getTime()) || startTime.toISOString().slice(0, 10) !== examDate) {
+    return null;
+  }
+
+  return {
+    startTime,
+    endTime: new Date(`${examDate}T23:59:59.999Z`),
+  };
+};
+
 export const createExam = async (req: Request, res: Response) => {
   try {
-    const { securityCode, ...examData } = req.body;
+    const { securityCode, examDate, ...examData } = req.body;
+    const dateBounds = getExamDateBounds(examDate);
+    if (!dateBounds) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid exam date is required",
+      });
+    }
+
     const securityCodeHash = securityCode ? await bcrypt.hash(securityCode, 10) : undefined;
     const newExam = new Exam({
      ...examData,
+      examDate,
+      ...dateBounds,
       securityCodeHash,
       createdBy: req.user?._id || req.user?.userId,
     });
@@ -88,10 +114,18 @@ export const getExam = async (req: Request, res: Response) => {
 
 export const updateExam = async (req: Request, res: Response) => {
   try {
-    const { securityCode, ...examData } = req.body;
+    const { securityCode, examDate, ...examData } = req.body;
+    const dateBounds = getExamDateBounds(examDate);
+    if (!dateBounds) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid exam date is required",
+      });
+    }
+
     const updateData = securityCode
-      ? { ...examData, securityCodeHash: await bcrypt.hash(securityCode, 10) }
-      : examData;
+      ? { ...examData, examDate, ...dateBounds, securityCodeHash: await bcrypt.hash(securityCode, 10) }
+      : { ...examData, examDate, ...dateBounds };
     let exam = await Exam.findByIdAndUpdate(
       req.params.id,
       updateData,
