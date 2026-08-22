@@ -2,13 +2,16 @@ import Exam from "../models/ExamModel.js";
 import Question from "../models/questionModel.js";
 import Result from "../models/resultModel.js";
 import type { Request, Response } from "express";
-
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 export const createExam = async (req: Request, res: Response) => {
   try {
+    const { securityCode, ...examData } = req.body;
+    const securityCodeHash = securityCode ? await bcrypt.hash(securityCode, 10) : undefined;
     const newExam = new Exam({
-     ...req.body,
+     ...examData,
+      securityCodeHash,
       createdBy: req.user?._id || req.user?.userId,
     });
 
@@ -85,9 +88,13 @@ export const getExam = async (req: Request, res: Response) => {
 
 export const updateExam = async (req: Request, res: Response) => {
   try {
+    const { securityCode, ...examData } = req.body;
+    const updateData = securityCode
+      ? { ...examData, securityCodeHash: await bcrypt.hash(securityCode, 10) }
+      : examData;
     let exam = await Exam.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       {
         new: true,
         runValidators: true,
@@ -101,7 +108,7 @@ export const updateExam = async (req: Request, res: Response) => {
       });
     }
 
-    // Automatically transition back to PUBLISHED if the admin extends the time of a COMPLETED exam
+    
     if (exam.status === "COMPLETED" && new Date(exam.endTime).getTime() > Date.now()) {
       exam.status = "PUBLISHED";
       await exam.save();
@@ -131,8 +138,6 @@ export const deleteExam = async (req: Request, res: Response) => {
       });
     }
 
-    // Delete all questions that belong to this exam
-    // We use the exam's _id since questions store the exam ID in their 'examId' field
     await Question.deleteMany({ examId: exam._id });
 
     // Additionally, if there are questions in the array just in case

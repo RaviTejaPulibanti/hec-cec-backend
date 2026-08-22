@@ -4,6 +4,7 @@ import authMiddleware from "../middlewares/authmiddleware.js";
 import {
   getAvailableExams,
   getExamById,
+  verifyExamCode,
   startExam,
   submitExam,
   getMyResults,
@@ -18,6 +19,8 @@ const router = Router();
 router.get("/exams", authMiddleware, getAvailableExams);
 
 router.get("/exams/:examId", authMiddleware, getExamById);
+
+router.post("/exams/:examId/verify-code", authMiddleware, verifyExamCode);
 
 router.post("/exams/:examId/start", authMiddleware, startExam);
 

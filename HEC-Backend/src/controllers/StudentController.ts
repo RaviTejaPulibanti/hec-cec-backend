@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import Exam from "../models/ExamModel.js";
 import Result from "../models/resultModel.js";
 import Question from "../models/questionModel.js";
+import bcrypt from "bcrypt";
+import { generateExamAccessToken, isValidExamAccessToken } from "../utils/jwt.js";
 
 
 
@@ -50,6 +52,13 @@ export const getExamById = async (
 
     const { examId } = req.params;
 
+    if (!isValidExamAccessToken(req.header("x-exam-access-token"), req.user._id as string, examId as string)) {
+      return res.status(403).json({
+        success: false,
+        message: "Enter the security code before starting this exam",
+      });
+    }
+
     if (!mongoose.Types.ObjectId.isValid(examId as string)) {
       return res.status(400).json({
         success: false,
@@ -82,6 +91,48 @@ export const getExamById = async (
       success: false,
       message: error.message,
     });
+  }
+};
+
+export const verifyExamCode = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const examId = req.params.examId as string;
+    const { securityCode } = req.body;
+    const now = new Date();
+
+    if (!mongoose.Types.ObjectId.isValid(examId) || typeof securityCode !== "string" || !securityCode.trim()) {
+      return res.status(400).json({ success: false, message: "A valid security code is required" });
+    }
+
+    const exam = await Exam.findOne({
+      _id: examId,
+      status: "PUBLISHED",
+      startTime: { $lte: now },
+      endTime: { $gte: now },
+    }).select("+securityCodeHash");
+
+    if (!exam) {
+      return res.status(404).json({ success: false, message: "Exam is not available" });
+    }
+
+    const isValid = exam.securityCodeHash
+      ? await bcrypt.compare(securityCode.trim(), exam.securityCodeHash)
+      : false;
+
+    if (!isValid) {
+      return res.status(401).json({ success: false, message: "Invalid security code" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Security code verified",
+      data: { accessToken: generateExamAccessToken(req.user._id as string, examId) },
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -129,6 +180,10 @@ export const submitExam = async (
   res: Response
 ) => {
   try {
+
+    if (!isValidExamAccessToken(req.header("x-exam-access-token"), req.user._id as string, req.params.examId as string)) {
+      return res.status(403).json({ success: false, message: "Verify the security code before submitting this exam" });
+    }
 
     const existingResult = await Result.  findOne({
      student: req.user._id as string,

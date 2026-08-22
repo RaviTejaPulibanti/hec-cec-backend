@@ -7,6 +7,7 @@ export interface IExam extends Document {
   questions: mongoose.Types.ObjectId[];
   startTime: Date;
   endTime: Date;
+  securityCodeHash?: string;
   status: "DRAFT" | "PUBLISHED" | "COMPLETED";
   createdBy: mongoose.Types.ObjectId;
 }
@@ -44,6 +45,11 @@ const examSchema = new Schema<IExam>(
     endTime: {
       type: Date,
       required: true,
+    },
+
+    securityCodeHash: {
+      type: String,
+      select: false,
     },
 
     status: {
