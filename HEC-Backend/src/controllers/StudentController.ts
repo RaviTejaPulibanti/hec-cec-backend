@@ -123,7 +123,9 @@ export const verifyExamCode = async (
       : false;
 
     if (!isValid) {
-      return res.status(401).json({ success: false, message: "Invalid security code" });
+      return res.status(400).json({ success: false, message: "Invalid security code", data :{accessToken: null
+
+      } });
     }
 
     return res.status(200).json({
