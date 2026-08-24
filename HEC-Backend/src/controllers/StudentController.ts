@@ -23,7 +23,7 @@ export const getAvailableExams = async (
     }).select("-questions");
 
     const upcomingExams = await Exam.find({
-      status: "PUBLISHED",
+      status: { $in: ["DRAFT", "PUBLISHED"] },
       startTime: { $gt: now },
     }).select("-questions");
 

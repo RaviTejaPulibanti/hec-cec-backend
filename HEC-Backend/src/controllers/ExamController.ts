@@ -5,30 +5,49 @@ import type { Request, Response } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
-const getExamDateBounds = (examDate: unknown) => {
-  if (typeof examDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(examDate)) {
+const getExamDateBounds = (examDate: unknown, endDate: unknown) => {
+  if (
+    typeof examDate !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(examDate) ||
+    typeof endDate !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(endDate)
+  ) {
     return null;
   }
 
   const startTime = new Date(`${examDate}T00:00:00.000Z`);
-  if (Number.isNaN(startTime.getTime()) || startTime.toISOString().slice(0, 10) !== examDate) {
+  const endTime = new Date(`${endDate}T23:59:59.999Z`);
+  if (
+    Number.isNaN(startTime.getTime()) ||
+    Number.isNaN(endTime.getTime()) ||
+    startTime.toISOString().slice(0, 10) !== examDate ||
+    endTime.toISOString().slice(0, 10) !== endDate ||
+    endTime < startTime
+  ) {
     return null;
   }
 
   return {
     startTime,
-    endTime: new Date(`${examDate}T23:59:59.999Z`),
+    endTime,
   };
 };
 
 export const createExam = async (req: Request, res: Response) => {
   try {
-    const { securityCode, examDate, ...examData } = req.body;
-    const dateBounds = getExamDateBounds(examDate);
+    const { securityCode, examDate, endDate, questions, ...examData } = req.body;
+    const dateBounds = getExamDateBounds(examDate, endDate);
     if (!dateBounds) {
       return res.status(400).json({
         success: false,
-        message: "A valid exam date is required",
+        message: "Valid start and end dates are required, and the end date cannot be before the start date",
+      });
+    }
+
+    if (!Array.isArray(questions) || questions.length !== Number(examData.totalQuestions)) {
+      return res.status(400).json({
+        success: false,
+        message: `Exactly ${examData.totalQuestions} questions are required`,
       });
     }
 
@@ -36,12 +55,28 @@ export const createExam = async (req: Request, res: Response) => {
     const newExam = new Exam({
      ...examData,
       examDate,
+      endDate,
       ...dateBounds,
       securityCodeHash,
       createdBy: req.user?._id || req.user?.userId,
     });
 
     await newExam.save();
+
+    try {
+      const createdQuestions = await Question.insertMany(
+        questions.map((question: Record<string, unknown>) => ({
+          ...question,
+          examId: newExam._id,
+          createdBy: req.user?._id || req.user?.userId,
+        }))
+      );
+      newExam.questions = createdQuestions.map((question) => question._id);
+      await newExam.save();
+    } catch (questionError) {
+      await Exam.deleteOne({ _id: newExam._id });
+      throw questionError;
+    }
 
     res.status(201).json({
       success: true,
@@ -114,18 +149,18 @@ export const getExam = async (req: Request, res: Response) => {
 
 export const updateExam = async (req: Request, res: Response) => {
   try {
-    const { securityCode, examDate, ...examData } = req.body;
-    const dateBounds = getExamDateBounds(examDate);
+    const { securityCode, examDate, endDate, ...examData } = req.body;
+    const dateBounds = getExamDateBounds(examDate, endDate);
     if (!dateBounds) {
       return res.status(400).json({
         success: false,
-        message: "A valid exam date is required",
+        message: "Valid start and end dates are required, and the end date cannot be before the start date",
       });
     }
 
     const updateData = securityCode
-      ? { ...examData, examDate, ...dateBounds, securityCodeHash: await bcrypt.hash(securityCode, 10) }
-      : { ...examData, examDate, ...dateBounds };
+      ? { ...examData, examDate, endDate, ...dateBounds, securityCodeHash: await bcrypt.hash(securityCode, 10) }
+      : { ...examData, examDate, endDate, ...dateBounds };
     let exam = await Exam.findByIdAndUpdate(
       req.params.id,
       updateData,

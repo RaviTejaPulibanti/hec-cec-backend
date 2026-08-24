@@ -6,6 +6,7 @@ export interface IExam extends Document {
   totalQuestions: number;
   questions: mongoose.Types.ObjectId[];
   examDate?: string;
+  endDate?: string;
   startTime: Date;
   endTime: Date;
   securityCodeHash?: string;
@@ -39,6 +40,11 @@ const examSchema = new Schema<IExam>(
     ],
 
     examDate: {
+      type: String,
+      match: /^\d{4}-\d{2}-\d{2}$/,
+    },
+
+    endDate: {
       type: String,
       match: /^\d{4}-\d{2}-\d{2}$/,
     },
