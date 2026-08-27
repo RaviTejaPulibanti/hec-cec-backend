@@ -10,6 +10,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: UserRole;
+  idNumber?: string;
   branch?: string;
   year?: string;
   studentClass?: string;
@@ -42,6 +43,10 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.STUDENT,
+    },
+    idNumber: {
+      type: String,
+      trim: true,
     },
     branch: {
       type: String,

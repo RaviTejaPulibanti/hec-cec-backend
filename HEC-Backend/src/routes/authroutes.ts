@@ -14,7 +14,15 @@ router.post("/signup", async (req: Request, res: Response) => {
 
     res.status(201).json({
       message: "User created successfully",
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        idNumber: user.idNumber,
+        branch: user.branch,
+        year: user.year,
+      },
       token: user.token,
     });
   } catch (error) {
@@ -31,7 +39,15 @@ router.post("/signin", async (req: Request, res: Response) => {
 
     res.status(200).json({
       message: "Signin successful",
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        idNumber: user.idNumber,
+        branch: user.branch,
+        year: user.year,
+      },
       token: user.token,
     });
   } catch (error) {

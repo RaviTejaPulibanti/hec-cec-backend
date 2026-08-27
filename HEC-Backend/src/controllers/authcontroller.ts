@@ -7,6 +7,8 @@ interface SignupData {
   email?: string;
   password?: string;
   role?: UserRole;
+  branch?: string;
+  year?: string;
 }
 
 interface SigninData {
@@ -15,7 +17,7 @@ interface SigninData {
 }
 
 const signup = async (data: SignupData) => {
-  const { name, email, password, role } = data;
+  const { name, email, password, role, branch, year } = data;
 
   if (!name || !name.trim()) {
     throw new Error("Name is required");
@@ -25,6 +27,12 @@ const signup = async (data: SignupData) => {
   }
   if (!password) {
     throw new Error("Password is required");
+  }
+  if (!branch || !["CSE", "AIML", "ECE", "EEE", "CIVIL", "MECH"].includes(branch)) {
+    throw new Error("Valid branch is required");
+  }
+  if (!year || !["E1", "E2", "E3", "E4"].includes(year)) {
+    throw new Error("Valid year is required");
   }
 
   
@@ -51,6 +59,9 @@ const signup = async (data: SignupData) => {
     name: name.trim(),
     email: formattedEmail,
     password: hashedPassword,
+    idNumber: formattedEmail.slice(0, 7),
+    branch,
+    year,
   };
 
   if (role) {
@@ -72,6 +83,9 @@ const signup = async (data: SignupData) => {
     name: user.name,
     email: user.email,
     role: user.role,
+    idNumber: user.idNumber,
+    branch: user.branch,
+    year: user.year,
     token,
   };
 };
@@ -108,6 +122,9 @@ const signin = async(data : SigninData)=>{
     email : user.email,
     token,
     role : user.role,
+    idNumber: user.idNumber,
+    branch: user.branch,
+    year: user.year,
   }
 }
 
@@ -124,6 +141,7 @@ const getme = async( req :any, res:any)=>{
         name: user.name,
         email: user.email,
         role: user.role,
+        idNumber: user.idNumber,
         branch: user.branch,
         year: user.year,
         studentClass: user.studentClass,
@@ -182,6 +200,7 @@ const updateProfile = async (req: any, res: any) => {
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
+        idNumber: updatedUser.idNumber,
         branch: updatedUser.branch,
         year: updatedUser.year,
         studentClass: updatedUser.studentClass,
