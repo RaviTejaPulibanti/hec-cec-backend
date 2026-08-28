@@ -22,6 +22,7 @@ router.post("/signup", async (req: Request, res: Response) => {
         idNumber: user.idNumber,
         branch: user.branch,
         year: user.year,
+        section: user.section,
       },
       token: user.token,
     });
@@ -47,6 +48,7 @@ router.post("/signin", async (req: Request, res: Response) => {
         idNumber: user.idNumber,
         branch: user.branch,
         year: user.year,
+        section: user.section,
       },
       token: user.token,
     });

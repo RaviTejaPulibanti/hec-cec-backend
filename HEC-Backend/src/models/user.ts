@@ -13,6 +13,7 @@ export interface IUser extends Document {
   idNumber?: string;
   branch?: string;
   year?: string;
+  section?: string;
   studentClass?: string;
 }
 
@@ -55,6 +56,10 @@ const userSchema = new Schema<IUser>(
     year: {
       type: String,
       enum: ["E1", "E2", "E3", "E4"],
+    },
+    section: {
+      type: String,
+      enum: ["A", "B", "C", "D", "E"],
     },
     studentClass: {
       type: String,

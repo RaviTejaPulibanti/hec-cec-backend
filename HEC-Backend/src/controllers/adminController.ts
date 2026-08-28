@@ -54,7 +54,7 @@ export const getAdminStats = async (req: Request, res: Response) => {
 
     // Fetch top 5 recent results
     const recentResults = await Result.find()
-      .populate("student", "name email idNumber branch year")
+      .populate("student", "name email idNumber branch year section")
       .populate("exam", "title")
       .sort({ createdAt: -1 })
       .limit(5)
@@ -142,7 +142,7 @@ export const getAllResults = async (
 ) => {
   try {
     const results = await Result.find()
-      .populate("student", "name email idNumber branch year")
+      .populate("student", "name email idNumber branch year section")
       .populate("exam", "title")
       .sort({ createdAt: -1 });
 
@@ -176,7 +176,7 @@ export const getExamResults = async (
     const results = await Result.find({
       exam: req.params.examId as string,
     })
-      .populate("student", "name email idNumber branch year")
+      .populate("student", "name email idNumber branch year section")
       .populate("exam", "title subject");
 
     res.status(200).json({

@@ -9,6 +9,7 @@ interface SignupData {
   role?: UserRole;
   branch?: string;
   year?: string;
+  section?: string;
 }
 
 interface SigninData {
@@ -17,7 +18,7 @@ interface SigninData {
 }
 
 const signup = async (data: SignupData) => {
-  const { name, email, password, role, branch, year } = data;
+  const { name, email, password, role, branch, year, section } = data;
 
   if (!name || !name.trim()) {
     throw new Error("Name is required");
@@ -33,6 +34,9 @@ const signup = async (data: SignupData) => {
   }
   if (!year || !["E1", "E2", "E3", "E4"].includes(year)) {
     throw new Error("Valid year is required");
+  }
+  if (!section || !["A", "B", "C", "D", "E"].includes(section)) {
+    throw new Error("Valid section is required");
   }
 
   
@@ -62,6 +66,7 @@ const signup = async (data: SignupData) => {
     idNumber: formattedEmail.slice(0, 7),
     branch,
     year,
+    section,
   };
 
   if (role) {
@@ -86,6 +91,7 @@ const signup = async (data: SignupData) => {
     idNumber: user.idNumber,
     branch: user.branch,
     year: user.year,
+    section: user.section,
     token,
   };
 };
@@ -125,6 +131,7 @@ const signin = async(data : SigninData)=>{
     idNumber: user.idNumber,
     branch: user.branch,
     year: user.year,
+    section: user.section,
   }
 }
 
@@ -144,6 +151,7 @@ const getme = async( req :any, res:any)=>{
         idNumber: user.idNumber,
         branch: user.branch,
         year: user.year,
+        section: user.section,
         studentClass: user.studentClass,
       },
     });
@@ -154,7 +162,7 @@ const getme = async( req :any, res:any)=>{
 
 const updateProfile = async (req: any, res: any) => {
   try {
-    const { name, branch, year, studentClass } = req.body;
+    const { name, branch, year, section, studentClass } = req.body;
     
     if (!name || !name.trim()) {
       return res.status(400).json({ message: "Name is required" });
@@ -176,11 +184,12 @@ const updateProfile = async (req: any, res: any) => {
       updates.year = year;
     }
 
-    if (studentClass) {
-      if (!["A", "B", "C", "D", "E"].includes(studentClass)) {
+    const requestedSection = section || studentClass;
+    if (requestedSection) {
+      if (!["A", "B", "C", "D", "E"].includes(requestedSection)) {
         return res.status(400).json({ message: "Invalid class" });
       }
-      updates.studentClass = studentClass;
+      updates.section = requestedSection;
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -203,6 +212,7 @@ const updateProfile = async (req: any, res: any) => {
         idNumber: updatedUser.idNumber,
         branch: updatedUser.branch,
         year: updatedUser.year,
+        section: updatedUser.section,
         studentClass: updatedUser.studentClass,
       },
     });
