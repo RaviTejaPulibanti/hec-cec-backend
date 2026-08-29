@@ -77,7 +77,7 @@ export const getExamById = async (
       });
     }
 
-    const questions = await Question.find({ examId: exam._id }).select("question options marks negativeMarks");
+    const questions = await Question.find({ examId: exam._id }).select("question imageUrl options marks negativeMarks");
     
     // Attach questions to the exam object
     (exam as any).questions = questions;

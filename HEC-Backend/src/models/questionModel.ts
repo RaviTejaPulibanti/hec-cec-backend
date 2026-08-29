@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IQuestion extends Document {
   question: string;
+  imageUrl?: string;
   options: string[];
   correctAnswer: number;
   marks: number;
@@ -16,6 +17,11 @@ const questionSchema = new Schema<IQuestion>(
       type: String,
       required: true,
       trim: true,
+    },
+
+    imageUrl: {
+      type: String,
+      default: "",
     },
 
     options: {
