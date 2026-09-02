@@ -51,6 +51,16 @@ export const createExam = async (req: Request, res: Response) => {
       });
     }
 
+    const questionKeys = questions.map((question: Record<string, unknown>) =>
+      String(question.question || "").trim().toLowerCase()
+    );
+    if (new Set(questionKeys).size !== questionKeys.length) {
+      return res.status(400).json({
+        success: false,
+        message: "The exam contains duplicate questions. Remove duplicates and try again.",
+      });
+    }
+
     const securityCodeHash = securityCode ? await bcrypt.hash(securityCode, 10) : undefined;
     const newExam = new Exam({
      ...examData,

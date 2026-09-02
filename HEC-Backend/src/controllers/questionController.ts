@@ -63,14 +63,43 @@ export const bulkCreateQuestions = async (req: Request, res: Response) => {
     }
 
     const existingCount = await Question.countDocuments({ examId: exam._id });
-    if (existingCount + questions.length > exam.totalQuestions) {
+    const uniqueQuestions = questions.filter((question: any, index: number, allQuestions: any[]) => {
+      const normalizedQuestion = String(question.question || "").trim().toLowerCase();
+      return allQuestions.findIndex(
+        (candidate: any) => String(candidate.question || "").trim().toLowerCase() === normalizedQuestion
+      ) === index;
+    });
+
+    if (uniqueQuestions.length !== questions.length) {
       return res.status(400).json({
         success: false,
-        message: `Adding ${questions.length} questions exceeds the maximum limit of ${exam.totalQuestions}. Current count: ${existingCount}.`,
+        message: "The upload contains duplicate questions. Remove duplicates and try again.",
       });
     }
 
-    const questionsToInsert = questions.map((q: any) => ({
+    const existingQuestions = await Question.find({ examId: exam._id }).select("question").lean();
+    const existingQuestionTexts = new Set(
+      existingQuestions.map((question) => question.question.trim().toLowerCase())
+    );
+    const alreadyUploaded = uniqueQuestions.some((question: any) =>
+      existingQuestionTexts.has(String(question.question || "").trim().toLowerCase())
+    );
+
+    if (alreadyUploaded) {
+      return res.status(400).json({
+        success: false,
+        message: "One or more questions already exist in this exam.",
+      });
+    }
+
+    if (existingCount + uniqueQuestions.length > exam.totalQuestions) {
+      return res.status(400).json({
+        success: false,
+        message: `Adding ${uniqueQuestions.length} questions exceeds the maximum limit of ${exam.totalQuestions}. Current count: ${existingCount}.`,
+      });
+    }
+
+    const questionsToInsert = uniqueQuestions.map((q: any) => ({
       ...q,
       examId: exam._id,
       createdBy,
