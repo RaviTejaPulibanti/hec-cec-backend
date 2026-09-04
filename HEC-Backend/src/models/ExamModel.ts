@@ -11,6 +11,9 @@ export interface IExam extends Document {
   endTime: Date;
   securityCodeHash?: string;
   status: "DRAFT" | "PUBLISHED" | "COMPLETED";
+  resultReleaseMode: "IMMEDIATE" | "AFTER_EXAM" | "MANUAL";
+  resultsReleased: boolean;
+  resultsReleaseOverride: boolean;
   createdBy: mongoose.Types.ObjectId;
 }
 
@@ -68,6 +71,22 @@ const examSchema = new Schema<IExam>(
       type: String,
       enum: ["DRAFT", "PUBLISHED", "COMPLETED"],
       default: "DRAFT",
+    },
+
+    resultReleaseMode: {
+      type: String,
+      enum: ["IMMEDIATE", "AFTER_EXAM", "MANUAL"],
+      default: "AFTER_EXAM",
+    },
+
+    resultsReleased: {
+      type: Boolean,
+      default: false,
+    },
+
+    resultsReleaseOverride: {
+      type: Boolean,
+      default: false,
     },
 
     createdBy: {

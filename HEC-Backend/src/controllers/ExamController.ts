@@ -271,6 +271,13 @@ export const addQuestionsToExam = async (
 
     await exam.save();
 
+    if (Array.isArray(questionIds) && questionIds.length > 0) {
+      await Question.updateMany(
+        { _id: { $in: questionIds } },
+        { $set: { examId: exam._id } }
+      );
+    }
+
     res.status(200).json({
       success: true,
       message: "Questions added successfully",
@@ -313,6 +320,10 @@ export const removeQuestionFromExam = async (
     exam.totalQuestions = exam.questions.length;
 
     await exam.save();
+
+    await Question.findByIdAndUpdate(questionId, {
+      $unset: { examId: 1 },
+    });
 
     res.status(200).json({
       success: true,
@@ -394,6 +405,37 @@ export const unpublishExam = async (
     res.status(200).json({
       success: true,
       message: "Exam unpublished successfully",
+      data: exam,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const toggleResultsRelease = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const exam = await Exam.findById(req.params.id);
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    exam.resultsReleased = !exam.resultsReleased;
+    exam.resultsReleaseOverride = true;
+    await exam.save();
+
+    res.status(200).json({
+      success: true,
+      message: exam.resultsReleased ? "Results released to students successfully" : "Results hidden from students successfully",
       data: exam,
     });
   } catch (error: any) {

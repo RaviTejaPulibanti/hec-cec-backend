@@ -147,12 +147,6 @@ export const getAllResults = async (
       .sort({ createdAt: -1 });
 
     const validResults = results.filter((r: any) => r.exam != null);
-    const orphanedIds = results.filter((r: any) => r.exam == null).map(r => r._id);
-
-    if (orphanedIds.length > 0) {
-      // Self-heal the database by deleting orphaned results
-      await Result.deleteMany({ _id: { $in: orphanedIds } });
-    }
 
     res.status(200).json({
       success: true,
@@ -177,7 +171,7 @@ export const getExamResults = async (
       exam: req.params.examId as string,
     })
       .populate("student", "name email idNumber branch year section")
-      .populate("exam", "title subject");
+      .populate("exam", "title duration");
 
     res.status(200).json({
       success: true,
@@ -199,7 +193,7 @@ export const getStudentResults = async (
   try {
     const results = await Result.find({
       student: req.params.studentId as string,
-    }).populate("exam", "title subject duration");
+    }).populate("exam", "title duration");
 
     res.status(200).json({
       success: true,

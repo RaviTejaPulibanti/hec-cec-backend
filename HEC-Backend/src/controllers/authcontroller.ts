@@ -10,6 +10,7 @@ interface SignupData {
   branch?: string;
   year?: string;
   section?: string;
+  adminSecret?: string;
 }
 
 interface SigninData {
@@ -18,7 +19,7 @@ interface SigninData {
 }
 
 const signup = async (data: SignupData) => {
-  const { name, email, password, role, branch, year, section } = data;
+  const { name, email, password, role, branch, year, section, adminSecret } = data;
 
   if (!name || !name.trim()) {
     throw new Error("Name is required");
@@ -45,8 +46,8 @@ const signup = async (data: SignupData) => {
     throw new Error("only college emails are allowed");
   }
 
-  if (password.length < 3) {
-    throw new Error("Password must be at least 3 characters long");
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters long");
   }
 
   
@@ -59,6 +60,17 @@ const signup = async (data: SignupData) => {
   
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // Strictly default to STUDENT to prevent unauthorized privilege escalation
+  let assignedRole = UserRole.STUDENT;
+  if (role === UserRole.COLLEGE_ADMIN) {
+    const configuredSecret = process.env.ADMIN_REGISTRATION_SECRET;
+    if (configuredSecret && adminSecret === configuredSecret) {
+      assignedRole = UserRole.COLLEGE_ADMIN;
+    } else {
+      throw new Error("Unauthorized to register as COLLEGE_ADMIN");
+    }
+  }
+
   const userPayload: any = {
     name: name.trim(),
     email: formattedEmail,
@@ -67,16 +79,8 @@ const signup = async (data: SignupData) => {
     branch,
     year,
     section,
+    role: assignedRole,
   };
-
-  if (role) {
-    if (Object.values(UserRole).includes(role)) {
-      userPayload.role = role;
-    } else {
-      const allowedRoles = Object.values(UserRole).join(", ");
-      throw new Error(`Invalid role. Choose from: ${allowedRoles}`);
-    }
-  }
 
   
   const user = await User.create(userPayload);

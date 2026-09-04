@@ -9,7 +9,8 @@ import {
   addQuestionsToExam,
   publishExam,
   unpublishExam,
-  removeQuestionFromExam
+  removeQuestionFromExam,
+  toggleResultsRelease,
 } from "../controllers/ExamController.js";
 
 import {adminMiddleware} from "../middlewares/adminmiddleware.js";
@@ -20,9 +21,9 @@ const router = Router();
 
 router.post("/", authMiddleware, adminMiddleware, createExam);
 
-router.get("/", authMiddleware, getExams);
+router.get("/", authMiddleware, adminMiddleware, getExams);
 
-router.get("/:id", authMiddleware, getExam);
+router.get("/:id", authMiddleware, adminMiddleware, getExam);
 
 router.put("/:id", authMiddleware, adminMiddleware, updateExam);
 
@@ -45,5 +46,7 @@ router.delete(
 router.patch("/:id/publish", authMiddleware, adminMiddleware ,  publishExam);
 
 router.patch("/:id/unpublish", authMiddleware, adminMiddleware, unpublishExam);
+
+router.patch("/:id/toggle-results-release", authMiddleware, adminMiddleware, toggleResultsRelease);
 
 export default router;

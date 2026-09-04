@@ -16,9 +16,9 @@ router.post("/bulk", authMiddleware, adminMiddleware, bulkCreateQuestions);
 
 router.post("/", authMiddleware, adminMiddleware, createQuestion);
 
-router.get("/", authMiddleware, getQuestions);
+router.get("/", authMiddleware, adminMiddleware, getQuestions);
 
-router.get("/:id", authMiddleware, getQuestion);
+router.get("/:id", authMiddleware, adminMiddleware, getQuestion);
 
 router.put("/:id", authMiddleware, adminMiddleware, updateQuestion);
 

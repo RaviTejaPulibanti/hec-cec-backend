@@ -12,6 +12,7 @@ export interface IResult extends Document {
   answers: IAnswer[];
 
   score: number;
+  totalMarks: number;
   correctAnswers: number;
   wrongAnswers: number;
   unattempted: number;
@@ -50,6 +51,11 @@ const resultSchema = new Schema<IResult>(
     ],
 
     score: {
+      type: Number,
+      default: 0,
+    },
+
+    totalMarks: {
       type: Number,
       default: 0,
     },

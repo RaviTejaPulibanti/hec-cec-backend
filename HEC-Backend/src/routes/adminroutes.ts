@@ -8,7 +8,9 @@ import {
   getExamResults,
   getStudents,
   getStudent,
+  getStudentResults,
   getDashboardStats,
+  getAdminStats,
   getUsers,
   updateUserRole,
   createAnnouncement,
@@ -72,6 +74,34 @@ router.patch(
   authMiddleware,
   adminMiddleware,
   updateUserRole
+);
+
+router.get(
+  "/students",
+  authMiddleware,
+  adminMiddleware,
+  getStudents
+);
+
+router.get(
+  "/students/:studentId",
+  authMiddleware,
+  adminMiddleware,
+  getStudent
+);
+
+router.get(
+  "/students/:studentId/results",
+  authMiddleware,
+  adminMiddleware,
+  getStudentResults
+);
+
+router.get(
+  "/admin-stats",
+  authMiddleware,
+  adminMiddleware,
+  getAdminStats
 );
 
 export default router;
