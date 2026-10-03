@@ -46,8 +46,8 @@ const signup = async (data: SignupData) => {
     throw new Error("only college emails are allowed");
   }
 
-  if (password.length < 8) {
-    throw new Error("Password must be at least 8 characters long");
+  if (password.length < 3) {
+    throw new Error("Password must be at least 3 characters long");
   }
 
   
